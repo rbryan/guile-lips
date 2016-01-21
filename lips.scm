@@ -1,8 +1,6 @@
 (use-modules (ice-9 format))
 
 (define line-number 0)					;line number for error reporting
-(define line-output-chars 0)				;number of unprocessed characters output
-							; to line so far
 
 (define parameters					;alist of parameters that is extended as 
  '()) 							;parameters are added
@@ -56,7 +54,6 @@
 		(if (eq? (peek-char iport) #\~) 		;then check if the next character is a tilda
 		  (begin					;if it is we output a tilda and eat the next tilda
 		    (display "~" oport)
-		    (set! line-output-chars (1+ line-output-chars))
 		    (read-char iport))
 		  (let ((expr (read iport)))			;else, read in the next valid lisp expression
 		    (cond 					
@@ -71,13 +68,14 @@
 					  (display value oport)
 					  (error "No defined parameter: line:" line-number  expr))))
 
-		      (else		(display expr oport))))))
+		      (else		(display expr oport)))))
+
+		(if (char-whitespace? (peek-char iport))	;if the following character is whitespace
+		  (read-char iport)))				;consume it so we don't have a bunch of extra newlines
 
 	((eq? cic #\newline)					
-	 	(if (not (zero? line-output-chars))
-		  (display cic oport))
-		(set! line-number (1+ line-number))
-		(set! line-output-chars 0))
+		(display cic oport)
+		(set! line-number (1+ line-number)))
 
 	((eof-object? cic) 
 	 	(call-finish-hooks)
