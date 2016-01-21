@@ -1,6 +1,8 @@
 (use-modules (ice-9 format))
 
 (define line-number 0)					;line number for error reporting
+(define line-output-chars 0)				;number of unprocessed characters output
+							; to line so far
 
 (define parameters					;alist of parameters that is extended as 
  '()) 							;parameters are added
@@ -21,6 +23,13 @@
       ((= argc 1))
       (else (useage)))
     (process (current-input-port) (current-output-port))))
+
+(define (include file)
+  (let ((fport (open-file file "r")))
+    (if fport
+      (do ((c (read-char fport) (read-char fport)))
+	((eof-object? c) (close-port fport))
+	(display c (current-output-port))))))
 
 (define (add-finish-hook hook)
   (set! finish-hooks (append finish-hooks (list hook))))
@@ -47,6 +56,7 @@
 		(if (eq? (peek-char iport) #\~) 		;then check if the next character is a tilda
 		  (begin					;if it is we output a tilda and eat the next tilda
 		    (display "~" oport)
+		    (set! line-output-chars (1+ line-output-chars))
 		    (read-char iport))
 		  (let ((expr (read iport)))			;else, read in the next valid lisp expression
 		    (cond 					
@@ -64,14 +74,19 @@
 		      (else		(display expr oport))))))
 
 	((eq? cic #\newline)					
-	  	(display cic oport)
-	 	(set! line-number (1+ line-number)))
+	 	(if (not (zero? line-output-chars))
+		  (display cic oport))
+		(set! line-number (1+ line-number))
+		(set! line-output-chars 0))
 
 	((eof-object? cic) 
 	 	(call-finish-hooks)
-	 	(exit 0))
+	 	(close-port (current-output-port))
+		(close-port (current-input-port))
+		(exit 0))
 
 	(else
+	  	(set! line-output-chars (1+ line-output-chars))
 	  	(display cic oport)))
       (loop (read-char iport))))
 
