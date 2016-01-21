@@ -1,0 +1,9 @@
+~~~~
+~(define-parameter 'test "test parameter output was a success!")
+~(add-finish-hook (lambda () "Bye there!"))
+~(define (add . nums)
+	(format #t "Sum of ~{ ~a ~}: " nums)
+	(apply + nums))
+~(add 1 2 3)
+~test
+
