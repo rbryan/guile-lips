@@ -1,3 +1,6 @@
+#!/usr/bin/guile -s
+!#
+
 (define line-number 0)					;line number for error reporting
 
 (define parameters					;alist of parameters that is extended as 
@@ -82,8 +85,9 @@
 		(exit 0))
 
 	(else
-	  	(set! line-output-chars (1+ line-output-chars))
 	  	(display cic oport)))
+
       (loop (read-char iport))))
 
 (main)
+
