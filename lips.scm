@@ -1,5 +1,3 @@
-(use-modules (ice-9 format))
-
 (define line-number 0)					;line number for error reporting
 
 (define parameters					;alist of parameters that is extended as 
