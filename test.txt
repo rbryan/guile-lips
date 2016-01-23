@@ -7,6 +7,9 @@
 	(format #t "Sum of ~{ ~a ~}: " nums)
 	(apply + nums))
 ~(add 1 2 3)
-~"\n"
+~(add 3456 10)
 ~test
+==================================================
+~(define (test) (display "test"))
+~(test)
 
