@@ -1,4 +1,5 @@
 ~~
+~(use-modules (ice-9 format))
 ~(include "includeme.txt")
 ~(define-parameter 'test "test parameter output was a success!\n")
 ~(add-finish-hook (lambda () "Bye there!\n"))
