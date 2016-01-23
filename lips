@@ -19,7 +19,9 @@
 
 (define (main)
   (let* ((args (command-line))
-	(argc (length args)))
+	(argc (length args))
+	(config (string-append (getenv "HOME") "/.lipsrc.scm")))
+    (load config)
     (cond
       ((= argc 3) (set-current-input-port (open-file (list-ref args 1) "r"))
 		  (set-current-output-port (open-file (list-ref args 2) "w")))
