@@ -26,7 +26,9 @@
 		  (set-current-output-port (open-file (list-ref args 2) "w")))
       ((= argc 1))
       (else (useage)))
-    (process (current-input-port) (current-output-port))))
+    (process (current-input-port) (current-output-port))
+    (close-port (current-output-port))
+    (close-port (current-input-port))))
 
 (define (include file)
   (let ((fport (open-file file "r")))
@@ -87,19 +89,16 @@
 		(set! first-character #t)
 		(set! line-number (1+ line-number)))
 
-	((eof-object? cic) 
-	 	(call-finish-hooks)
-	 	(close-port (current-output-port))
-		(close-port (current-input-port))
-		(exit 0))
+	((eof-object? cic))
 
 	(else
 	 	(if first-character 
 		  (set! first-character #f))
 	  	(display cic oport)))
 
-
-      (loop (read-char iport))))
+      (if (eof-object? cic)
+	(call-finish-hooks)
+      (loop (read-char iport)))))
 
 (main)
 
