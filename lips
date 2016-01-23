@@ -2,6 +2,10 @@
 !#
 
 (define line-number 0)					;line number for error reporting
+(define first-character #t)				;are we processing the first (non-whitespace) 
+							;character of the line?
+							;if we are and it is a macro and nothing else exists
+							;on the line then we'll remove the following newline
 
 (define parameters					;alist of parameters that is extended as 
  '()) 							;parameters are added
@@ -71,7 +75,7 @@
 
 		      (else		(display expr oport)))))
 
-		(if (char-whitespace? (peek-char iport))	;if the following character is whitespace
+		(if (eq? #\newline (peek-char iport))		;if the following character is a newline
 		  (read-char iport)))				;consume it so we don't have a bunch of extra newlines
 
 	((eq? cic #\newline)					
@@ -86,6 +90,10 @@
 
 	(else
 	  	(display cic oport)))
+
+      (if (and first-character 
+	       (not (char-whitespace? cic)))
+	       (set! first-character #f))
 
       (loop (read-char iport))))
 
