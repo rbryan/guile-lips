@@ -1,22 +1,10 @@
 #!/usr/bin/guile -s
 !#
 
-;alist of parameters defined using define-parameter
-(define parameters
- '())
+(add-to-load-path (string-append (getenv "HOME") "/.config/lips/modules/"))
 
-;list of functions to call just before exiting
-;finish-hooks are called at the end of the file they are written in.
-;If you would like to define finish hooks in a separate file then
-;you must load that file with (load) not include.
-(define finish-hooks
-  '())
-
-;when include is called the hooks for the current
-;are pushed to this stack and a new list is started
-;for the included file.
-(define hook-stack
-  '())
+(use-modules (lips process)
+	     (lips standard))
 
 (define (useage)
   (display "Usage:\t lips < input.txt > output.txt | lips input.txt output.txt\n")
@@ -25,7 +13,7 @@
 (define (main)
   (let* ((args (command-line))
 	(argc (length args))
-	(config (string-append (getenv "HOME") "/.config/lipsrc.scm")))
+	(config (string-append (getenv "HOME") "/.config/lips/lipsrc.scm")))
     (if (access? config R_OK)
     	(load config))
     (cond
@@ -36,106 +24,8 @@
     (process (current-input-port) (current-output-port))
     (close-port (current-output-port))
     (close-port (current-input-port))
-    (call-finish-hooks)))
-
-(define (printable? s)
-  (or (number? s)
-      (string? s)
-      (list?   s)))
-
-(define (push l stack)
-  (set! stack (cons l stack)))
-
-(define (pop stack)
-  (if (nil? stack)
-    stack
-    (let ((l (car stack)))
-      (set! stack (cdr stack))
-      l)))
-
-(define (include file)
-  (let ((fport (open-file file "r")))
-    (if fport
-      (begin
-	(push finish-hooks hook-stack)
-	(set! finish-hooks '())
-        ;ideally this should output to the port
-        ;that the (process) call that called (include) outputs to.
-        ;This should work fine in just about every case, but if the user
-        ;decides they want to call process themselves (can't imagine why
-        ;they would) and what they call it on calls include 
-        ;then it will be a problem.
-        (process fport (current-output-port))
-	(set! finish-hooks (pop hook-stack)))
-      (error "Include couldn't open file:" file))))
-
-(define (add-finish-hook hook)
-  (set! finish-hooks (append finish-hooks (list hook))))
-
-(define (call-finish-hooks)
-  (for-each (lambda (hook)
-	      (hook)) finish-hooks))
-
-(define (define-parameter sym expr)
-  (set! parameters (assq-set! parameters sym expr)))
-
-(define (process iport oport)
-  (define line-number 0)
-  (define first-character #t)
-  ;line-number -> for error reporting
-  ;first-character -> are we processing the first character of the line?
-  ;			If so and it is a macro that produces no printable output
-  ;			and nothing else is on the line
-  ;			we will remove the following newline
-  ;we're going to loop over all the characters
-  ;in the file looking for escapes
-  ;cic -> current input character
-  (let loop ((cic (read-char iport)))
-      (cond 
-	;if we find a tilda then check to see if the next character
-	;is also a tilda. If it is, then we output a tilda and eat the
-	;tilda from input.
-	((eq? cic #\~)
-		(if (eq? (peek-char iport) #\~)
-		  (begin
-		    (display "~" oport)
-		    (read-char iport))
-		  ;if the next character is not a tilda then read in a s-exp
-		  (let ((expr (read iport)))
-		    (cond 					
-			;if expr is a list then evaluate and print output
-			;if we're at the beginning of a line and the character
-			;following the expression is a newline then, if the expression
-			;doesn't evaluate to something printable, ignore the newline
-		      ((list? expr) (let ((output (primitive-eval expr))) 
-				      (if (printable? output)
-					(display output oport)
-					(if (and first-character
-					      (eq? (peek-char iport) #\newline))
-					  (read-char iport)))))
-			;if expr is a symbol then look it up in the
-			;parameters alist
-		      ((symbol? expr) (let ((value (assq-ref parameters expr)))
-					(if value
-					  (display value oport)
-					  (error "No defined parameter: line:" line-number  expr))))
-
-		      (else		(display expr oport))))))
-
-	((eq? cic #\newline)					
-		(display cic oport)
-		(set! first-character #t)
-		(set! line-number (1+ line-number)))
-
-	((eof-object? cic))
-
-	(else
-	 	(if first-character 
-		  (set! first-character #f))
-	  	(display cic oport)))
-
-      (if (not (eof-object? cic))
-        (loop (read-char iport)))))
+    (if (defined? 'call-finish-hooks)
+      (call-finish-hooks))))
 
 (main)
 
