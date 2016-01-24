@@ -17,7 +17,8 @@
   (let* ((args (command-line))
 	(argc (length args))
 	(config (string-append (getenv "HOME") "/.config/lipsrc.scm")))
-    (load config)
+    (if (access? config R_OK)
+    	(load config))
     (cond
       ((= argc 3) (set-current-input-port (open-file (list-ref args 1) "r"))
 		  (set-current-output-port (open-file (list-ref args 2) "w")))
