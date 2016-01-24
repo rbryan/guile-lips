@@ -1,16 +1,13 @@
 #!/usr/bin/guile -s
 !#
 
-(define line-number 0)					;line number for error reporting
-(define first-character #t)				;are we processing the first character of the line?
-							;if we are and it is a macro and nothing else exists
-							;on the line then we'll remove the following newline
+;alist of parameters defined using define-parameter
+(define parameters
+ '())
 
-(define parameters					;alist of parameters that is extended as 
- '()) 							;parameters are added
-
-(define finish-hooks					;list of functions to call when the end of the
-  '())							;file is reached
+;list of functions to call just before exiting
+(define finish-hooks
+  '())
 
 (define (useage)
   (display "Usage:\t lips < input.txt > output.txt | lips input.txt output.txt\n")
@@ -28,55 +25,66 @@
       (else (useage)))
     (process (current-input-port) (current-output-port))
     (close-port (current-output-port))
-    (close-port (current-input-port))))
-
-(define (include file)
-  (let ((fport (open-file file "r")))
-    (if fport
-      (do ((c (read-char fport) (read-char fport)))
-	((eof-object? c) (close-port fport))
-	(display c (current-output-port))))))
-
-(define (add-finish-hook hook)
-  (set! finish-hooks (append finish-hooks (list hook))))
-
-(define (call-finish-hooks)
-  (map (lambda (hook)
-	 (let ((output (hook)))
-	   (if (printable? output)
-	     (display output)))) finish-hooks))
-
-(define (define-parameter sym expr)
-  (set! parameters (assq-set! parameters sym expr)))
+    (close-port (current-input-port))
+    (call-finish-hooks)))
 
 (define (printable? s)
   (or (number? s)
       (string? s)
       (list?   s)))
 
+(define (include file)
+  (let ((fport (open-file file "r")))
+    (if fport
+      (process fport (current-output-port))
+      (error "Include couldn't open file:" file))))
+
+(define (add-finish-hook hook)
+  (set! finish-hooks (append finish-hooks (list hook))))
+
+(define (call-finish-hooks)
+  (for-each (lambda (hook)
+	      (hook)) finish-hooks))
+
+(define (define-parameter sym expr)
+  (set! parameters (assq-set! parameters sym expr)))
+
 (define (process iport oport)
-  (let loop ((cic ;current input character		;we're going to loop over all the characters
-	       	 (read-char iport)))			; in the file looking for escapes
+  (define line-number 0)
+  (define first-character #t)
+  ;line-number -> for error reporting
+  ;first-character -> are we processing the first character of the line?
+  ;			If so and it is a macro that produces no printable output
+  ;			and nothing else is on the line
+  ;			we will remove the following newline
+  ;we're going to loop over all the characters
+  ;in the file looking for escapes
+  ;cic -> current input character
+  (let loop ((cic (read-char iport)))
       (cond 
-	((eq? cic #\~)						;if we find a tilda
-		(if (eq? (peek-char iport) #\~) 		;then check if the next character is a tilda
-		  (begin					;if it is we output a tilda and eat the next tilda
+	;if we find a tilda then check to see if the next character
+	;is also a tilda. If it is, then we output a tilda and eat the
+	;tilda from input.
+	((eq? cic #\~)
+		(if (eq? (peek-char iport) #\~)
+		  (begin
 		    (display "~" oport)
 		    (read-char iport))
-		  (let ((expr (read iport)))			;else, read in the next valid lisp expression
+		  ;if the next character is not a tilda then read in a s-exp
+		  (let ((expr (read iport)))
 		    (cond 					
-		      						;if expr is a list then evaluate and print output
-								;if we're at the beginning of a line and the character
-								;following the expression is a newline then, if the expression
-								;doesn't evaluate to something printable, ignore the newline
+			;if expr is a list then evaluate and print output
+			;if we're at the beginning of a line and the character
+			;following the expression is a newline then, if the expression
+			;doesn't evaluate to something printable, ignore the newline
 		      ((list? expr) (let ((output (primitive-eval expr))) 
 				      (if (printable? output)
 					(display output oport)
 					(if (and first-character
 					      (eq? (peek-char iport) #\newline))
 					  (read-char iport)))))
-		      						;if expr is a symbol then look it up in the
-								;parameters alist
+			;if expr is a symbol then look it up in the
+			;parameters alist
 		      ((symbol? expr) (let ((value (assq-ref parameters expr)))
 					(if value
 					  (display value oport)
@@ -96,9 +104,8 @@
 		  (set! first-character #f))
 	  	(display cic oport)))
 
-      (if (eof-object? cic)
-	(call-finish-hooks)
-      (loop (read-char iport)))))
+      (if (not (eof-object? cic))
+        (loop (read-char iport)))))
 
 (main)
 

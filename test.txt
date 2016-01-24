@@ -1,8 +1,8 @@
 ~~
 ~(use-modules (ice-9 format))
+~(add-finish-hook (lambda () "Bye there!\n"))
 ~(include "includeme.txt")
 ~(define-parameter 'test "test parameter output was a success!\n")
-~(add-finish-hook (lambda () "Bye there!\n"))
 ~(define (add . nums)
 	(format #t "Sum of ~{ ~a ~}: " nums)
 	(apply + nums))
