@@ -3,8 +3,7 @@
 
 (add-to-load-path (string-append (getenv "HOME") "/.config/lips/modules/"))
 
-(use-modules (lips process)
-	     (lips standard))
+(use-modules (lips process))
 
 (define (useage)
   (display "Usage:\t lips < input.txt > output.txt | lips input.txt output.txt\n")
