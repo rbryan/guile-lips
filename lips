@@ -36,6 +36,12 @@
 (define (include file)
   (let ((fport (open-file file "r")))
     (if fport
+      ;ideally this should output to the port
+      ;that the (process) call that called (include) outputs to.
+      ;This should work fine in just about every case, but if the user
+      ;decides they want to call process themselves (can't imagine why
+      ;they would) and what they call it on calls include 
+      ;then it will be a problem.
       (process fport (current-output-port))
       (error "Include couldn't open file:" file))))
 
