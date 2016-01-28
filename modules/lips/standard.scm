@@ -8,7 +8,8 @@
 			  add-finish-hook
 			  call-finish-hooks
 			  define-parameter)
-	       #:replace (include))
+	       #:replace (primitive-eval
+			  include))
 
 
 
@@ -64,4 +65,22 @@
 
 (define (define-parameter sym expr)
   (set! parameters (assq-set! parameters sym expr)))
+
+(define primitive-eval
+  (let ((old-primitive-eval (@ (guile) primitive-eval)))
+    (lambda (expr)
+      (if (symbol? expr)
+  	;if expr is a symbol then look it up in the
+  	;parameters alist
+        (let ((value (assq-ref parameters expr)))
+		(if value
+		  (display value (current-output-port))
+		  (error "No defined parameter:" expr)))
+        (old-primitive-eval expr)))))
+
+;;Redefine primitive-eval for (lips process) module.
+;;Curse you guile for keeping me safe from myself!!!
+(module-define! (resolve-module '(lips process)) 'primitive-eval primitive-eval)
+
+
 

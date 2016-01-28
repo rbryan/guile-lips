@@ -10,7 +10,8 @@
   (define (printable? s)
     (or (number? s)
         (string? s)
-        (list?   s)))
+        (list?   s)
+	(symbol? s)))
   
   (define line-number 0)
   (define first-character #t)
@@ -33,26 +34,17 @@
 		    (display "~" oport)
 		    (read-char iport))
 		  ;if the next character is not a tilda then read in a s-exp
-		  (let ((expr (read iport)))
-		    (cond 					
-			;if expr is a list then evaluate and print output
+			;evaluate and print output
 			;if we're at the beginning of a line and the character
 			;following the expression is a newline then, if the expression
 			;doesn't evaluate to something printable, ignore the newline
-		      ((list? expr) (let ((output (primitive-eval expr))) 
-				      (if (printable? output)
-					(display output oport)
-					(if (and first-character
-					      (eq? (peek-char iport) #\newline))
-					  (read-char iport)))))
-			;if expr is a symbol then look it up in the
-			;parameters alist
-		      ((symbol? expr) (let ((value (assq-ref parameters expr)))
-					(if value
-					  (display value oport)
-					  (error "No defined parameter: line:" line-number  expr))))
-
-		      (else		(display expr oport))))))
+		  (let* ((expr (read iport))
+		        (output (primitive-eval expr))) 
+		      (if (printable? output)
+			(display output oport)
+			(if (and first-character
+			      (eq? (peek-char iport) #\newline))
+			  (read-char iport))))))
 
 	((eq? cic #\newline)					
 		(display cic oport)
