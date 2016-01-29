@@ -3,8 +3,6 @@
 	       #:export (parameters
 			  finish-hooks
 			  hook-stack
-			  push
-			  pop
 			  add-finish-hook
 			  call-finish-hooks
 			  define-parameter)
