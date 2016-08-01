@@ -1,8 +1,0 @@
-~~
-
-
-
-Sum of  1  2  3 : 6
-test parameter output was a success!
-
-Bye there!
